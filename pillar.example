@@ -47,6 +47,23 @@ mysql:
     grants:
       - 'all privileges'
 
+  # Manage config
+  config:
+    file: ~/.my.cnf
+    sections:
+      client:
+        port: 33306
+        socket: /var/lib/mysql-socket/mysql.sock
+      mysqld_safe:
+        plugin-dir: '~/mysql/plugins'
+      mysqld:
+        user: myself
+        port: 33306
+        datadir: ~/mysql/datadir
+    apparmor:
+      dir: /etc/apparmor.d/local
+      file: usr.sbin.mysqld
+
   # Manage databases
   database:
     # Simple definition using default charset and collate
@@ -89,20 +106,26 @@ mysql:
       databases:
         - database: foo
           grants: ['select', 'insert', 'update']
+          escape: True
         - database: bar
           grants: ['all privileges']
     bob:
       password_hash: '*6C8989366EAF75BB670AD8EA7A7FC1176A95CEF4'
-      host: localhost
+      host: '%' # Any host
       ssl: True
       ssl-X509: True
       ssl-SUBJECT: Subject
       ssl-ISSUER: Name
       ssl-CIPHER: Cipher
       databases:
-        - database: foo
+        # https://github.com/saltstack/salt/issues/41178
+        # If you want to refer to databases using wildcards, turn off escape so
+        # the renderer does not escape them, enclose the string in '`' and
+        # use two '%'
+        - database: '`foo\_%%`'
           grants: ['all privileges']
           grant_option: True
+          escape: False
         - database: bar
           table: foobar
           grants: ['select', 'insert', 'update', 'delete']
